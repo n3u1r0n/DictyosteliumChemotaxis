@@ -1,0 +1,313 @@
+\documentclass{class}
+
+\addbibresource{bib.bib}
+
+\title{Dictyostelium Chemotaxis}
+\author{Florian Lang 11711870}
+\date{25.08.2022}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+In this project we through the model proposed in \cite{paper}.
+It models the aggregation of \emph{Dictyostelium discoideum} cells into larger structures which happens through chemical communication.
+We will not look at external sources of the chemical, only those emitted by the cells.
+As the case of an initial uniform distribution and differing parameters has already been look at (and can be looked at at \href{https://www.complexity-explorables.org/explorables/come-together/}{Complexity Explorables}), we will look at different initial particle distributions and different configurations of so called pacemakers, i.e. special cells that emit the chemical at regular frequency regardless of other parameters.
+\end{abstract}
+
+\section{Idea}
+
+Essentially the cells want to aggregate in to larger structures and they do so via chemical interaction.
+They try to detect the chemical in their surrounding.
+If they detect some, they move in the direction of the highest concentration and switch into an active state.
+In their active state they emit the chemical by themselves so other particles can find them as well.
+After some time in the active state the cell has to recover and switches into an recovering state in which the cell does nothing.
+When the cell recovers it goes back to try detecting the chemical.
+
+To get this whole process starting there are special pacemaker cells which simply skip the detecting of the chemical.
+So pacemaker cells simply emit the chemical at a fixed frequency and hence are some sort of a beacon for the other particles.
+
+\section{Model}
+
+The \emph{concentration of the chemical} is modelled by a function
+\begin{align*}
+    C:\ 
+    \R^3&\to\R\\
+    (x,\,y,\,t)&\mapsto C(x,\,y,\,t).
+\end{align*}
+The \emph{cells} (in the following \emph{particles}) are modelled by
+\begin{align*}
+    p_i=(x_i,\,y_i,\,s_i)\in\R^3,\quad i\in\{1,\,2,\,\ldots,\,N\}.
+\end{align*}
+where $(x_i,\,y_i)$ is the location while $s_i$ is the current state of the particle.
+Essentially the particles have 3 different states.
+\begin{itemize}
+    \item \emph{Active}, while which the particle emits the chemical at a rate $\gamma$.
+          The particle is in this state for a time $t_a$ and then it switches to the \emph{recovering} state.
+    \item \emph{Recovering}, while which the particle does nothing for some time $t_r$ and then it switches to the
+          \emph{inactive} state.
+    \item \emph{Inactive}, while which the particle tries to detect the chemical in its surrounding.
+          If there is a concentration larger than some threshold $\tau$, the particle moves a fixed distance $d$ in the direction of the largest concentration
+          \begin{align*}
+              (x_i,\,y_i)\rightarrow(x_i,\,y_i)+\frac{\nabla C}{\norm{\nabla C}}d,
+          \end{align*}
+          if the gradient is larger than some threshold $m$, and it switches into the \emph{active} state.
+\end{itemize}
+Besides the movement in the direction of the highest concentration the particles also move randomly with a magnitude $r$.
+For a more convenient way to look at the particle states see the flow chart in \autoref{fig:states}.
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \node[
+            draw,
+            minimum width=2cm,
+            minimum height=1cm,
+            align=left
+        ] (A) at (0,0)
+        {
+            \textbf{Active}\\
+            Emit chemical at a rate $\gamma$.
+        };
+        \node[
+            draw,
+            minimum width=2cm,
+            minimum height=1cm,
+            align=left
+        ] (R) at (7,0)
+        {
+            \textbf{Recovery}\\
+            Do nothing.
+        };
+        \node[
+            draw,
+            minimum width=2cm,
+            minimum height=1cm,
+            align=left
+        ] (I) at (3.5,-3)
+        {
+            \textbf{Inactive}\\
+            Do nothing, but when exiting\\
+            this state move a fixed distance\\
+            $d$ in the direction of\\
+            $\nabla C$ if $\norm{\nabla C}>m$.
+        };
+        \draw[->,shorten >=0.25cm,shorten <=0.25cm] (A) to[edge label=after time $t_a$, bend left] (R);
+        \draw[->,shorten >=0.25cm,shorten <=0.25cm] (R) to[edge label=after time $t_r$, bend left] (I);
+        \draw[->,shorten >=0.25cm,shorten <=0.25cm] (I) to[edge label=when $C>\tau$, bend left] (A);
+    \end{tikzpicture}
+    \caption{Particle States}
+    \label{fig:states}
+\end{figure}
+
+Apart from the emission of the particles the concentration is naturally object to diffusion at a rate $\alpha$ and decay at a rate $\beta$.
+So all in all we get for the concentration
+\begin{align}\label{eq:C}
+    \pdv{C}{t}=\alpha\left(\pdv[2]{C}{x}+\pdv[2]{C}{y}\right)-\beta C+\sum_{a\in A}\gamma_a\delta_a.
+\end{align}
+Where the first term describes the diffusion, the second term the decay and the last term describes the newly emitted chemical of the currently active particles $A$.
+Note that $\delta_a$ is a delta distribution centered at the position of the particle $a$ and $\gamma_a$ is the emission rate of the particle $a$.
+
+To get the whole process starting we introduce \emph{pacemaker} particles which act similar to normal particles except that they have a different emission rate $\gamma_p$ and they skip the inactive state and go directly from recovering to active.
+
+Note that for every cycle of a particle the non-random movement is similar to a gradient flow where $C$ acts as the potential.
+
+\subsection{Some Comments On Modelling Choices}
+
+Now let us discuss some of the choices made.
+
+First the 3 states come from the assumption that a cell doesn't have an infinite supply of the chemical, so after it emitted a bunch, it has to recover, i.e. produce some of the chemical again.
+
+Secondly we assume that both the detection of the concentration as well as the detection of the concentration gradient must have some threshold as the cells cannot detect too little changes in either.
+
+Further we assumed that all the cell specific constants (like the times in states or the thresholds) vary very little from cell to cell so we can set the same parameters for all the cells.
+
+We naturally assumed that the chemical diffuses.
+We also assumed that by some chemical process (for example oxidisation) the chemical decays after some time.
+Both the decay an diffusion we assumed to happen homogeneous throughout space and time.
+
+The choices for the initial particle distributions we will look at later mostly lack motivation, however there might be reasons for such initial distributions to occur for example differing fluid viscosity or other obstructions in the domain.
+
+Also note that this model does not consider collisions of particles and it will possibly fail to model reality if the particle density gets to high.
+
+\section{Kinetic Equation}
+
+Sadly we were not able to formulate the the particle movement and the state dynamics in a more formal way, let alone derive the kinetic equation, as the problem was to complex to handle for us (if it is even possible in a time continuous way).
+
+\section{Dimensional Analysis}
+
+Note that $\alpha$ has dimension $length^2\cdot time^{-1}$, $\beta$ has dimension $time^{-1}$ and $\gamma_a$ has dimension $concentration\cdot time^{-1}$.
+If we were to introduce the unit-less variables $v=x\sqrt{\frac{\beta}{\alpha}},\,w=y\sqrt{\frac{\beta}{\alpha}},\,s=\beta t$ and use $\tau$ as reference concentration we could define
+\begin{align*}
+    \C(v,\,w,\,s)=\frac{1}{\tau}C\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right).
+\end{align*}
+This then gives
+\begin{align*}
+    \C_{vv}(v,\,w,\,s)
+    &=\frac{\alpha}{\tau\beta}C_{xx}\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right)\\
+    \C_{ww}(v,\,w,\,s)
+    &=\frac{\alpha}{\tau\beta}C_{yy}\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right)\\
+    \C_{s}(v,\,w,\,s)
+    &=\frac{1}{\tau\beta}C_{t}\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right).
+\end{align*}
+Using \autoref{eq:C} we would get 
+\begin{align*}
+    \C_s(v,\,w,\,s)
+    =&\,\frac{1}{\tau\beta}C_{t}\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right)\\
+    =&\,\frac{1}{\tau\beta}\Bigg(\alpha\left(C_{xx}\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right)+C_{yy}\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right)\right)\\
+    &\,-\beta C\left(\sqrt{\frac{\alpha}{\beta}}v,\,\sqrt{\frac{\alpha}{\beta}}w,\,\frac{s}{\beta}\right)+\sum_{a\in A}\gamma_a\delta_a\Bigg)\\
+    =&\,\C_{vv}(v,\,w,\,s)+\C_{ww}(v,\,w,\,s)-\C(v,\,w,\,s)+\sum_{a\in A}\tilde{\gamma}_a\delta_a
+\end{align*}
+with $\tilde{\gamma}_a=\frac{\gamma_a}{\tau\beta}$.
+This equation is now completely unit-less.
+However we will stick to the equation with units for the following.
+
+\section{Implementation}
+
+To simulate the concentration $C$ we use a discrete square grid.
+We choose the grid larger than the area in which particles are found, so we essentially model a theoretically unbounded domain but with a bounded space in which the particles are.
+This means we do not need to think about boundary conditions.
+
+The particle state is modelled trough a float.
+If it is positive then the particle is currently active.
+If it is negative then the particle is recovering.
+Finally the state $0$ corresponds to an inactive particle.
+
+We will now go through what is done in a single time step of the simulation.
+
+Note that we will use a temporary emitted concentration variable $C_e$ to keep track of the total amount of newly emitted chemical, to avoid particle interactions in the same time step.
+
+The particle dynamics is easily implemented as follows.
+\begin{itemize}
+    \item If the particle is at state $0$ and the concentration $C$ in its underlying grid cell above $\tau$ its state gets set to $t_a$.
+    If $\norm{\nabla C}>m$ then also update the particle location with $(x_i,\,y_i)\rightarrow(x_i,\,y_i)+\frac{\nabla C}{\norm{\nabla C}}d$
+    \item If the particle state is positive then decrement the particle state by $\Delta t$ (or set it to $-t_r$ if it would get negative).
+    Also increment the emitted concentration $C_e$ by $\Delta t\gamma$ in the cell corresponding to the particles position.
+    \item If the particle state is negative then increment the state by $\Delta t$ (or set it to $0$ if it would get positive).
+\end{itemize}
+
+For pacemaker particles we have similarly
+\begin{itemize}
+    \item If the particle state is positive then decrement the particle state by $\Delta t$ (or set it to $-t_r$ if it would get negative).
+    Also increment the emitted concentration $C_e$ by $\Delta t\gamma_p$ in the cell corresponding to the particles position.
+    \item If the particle state is negative then increment the state by $\Delta t$ (or set it to $t_a$ if it would get positive).
+\end{itemize}
+
+After we have done this $C_e$ corresponds to $\Delta t\sum_{a\in A}\gamma_a\delta_a$ in \autoref{eq:C} which we can now add to $C$.
+
+Now its left to do the diffusion and decay part of \autoref{eq:C}, i.e.
+\begin{align*}
+    \pdv{C}{t}=\alpha\left(\pdv[2]{C}{x}+\pdv[2]{C}{y}\right)-\beta C.
+\end{align*}
+We use the implicit Euler method for doing this time step. The equation hence reads
+\begin{align*}
+    \frac{C^{n+1}_{i,j}-C^n_{i,j}}{\Delta t}
+    =\alpha\left(\frac{C^{n+1}_{i-1,j}-2C^{n+1}_{i,j}+C^{n+1}_{i+1,j}}{\Delta x^2}+\frac{C^{n+1}_{i,j-1}-2C^{n+1}_{i,j}+C^{n+1}_{i,j+1}}{\Delta x^2}\right)-\beta C^{n+1}_{i,j}
+\end{align*}
+or rearranged
+\begin{align*}
+    C^n_{i,j}
+    =\left(1+4\frac{\Delta t\alpha}{\Delta x^2}+\Delta t\beta\right)C^{n+1}_{i,j}-\frac{\Delta t\alpha}{\Delta x^2}C^{n+1}_{i-1,j}-\frac{\Delta t\alpha}{\Delta x^2}C^{n+1}_{i+1,j}-\frac{\Delta t\alpha}{\Delta x^2}C^{n+1}_{i,j-1}-\frac{\Delta t\alpha}{\Delta x^2}C^{n+1}_{i,j+1}.
+\end{align*}
+So writing $C^n$ as a vector in an appropriate way gives
+\begin{align*}
+    C^n=AC^{n+1}
+\end{align*}
+where $A$ is a sparse matrix and we only need to solve this linear equation for $C^{n+1}$.
+
+Finally we only need to change the particle position by a small (determined by the \emph{random magnitude} $r$) random value.
+
+\section{Simulations And Observations}
+
+In \autoref{tab:par} are the parameters we used and did not change for the following simulations.
+Only the initial distribution of particles changes throughout the different simulations.
+\begin{table}
+    \centering
+    \begin{tabular}{l|l|r}
+        Parameter  & Description & Value\\\hline\hline
+        $N$        & Number of cells & 5000\\\hline
+        $S$        & Width and height of the square & 10\\\hline
+        $\Delta x$ & Spacing of the grid & 0.1\\\hline
+        $\Delta t$ & Time step & 0.0006\\\hline
+        $\alpha$   & Diffusion rate & 3\\\hline
+        $\beta$    & Decay rate & 32\\\hline
+        $t_a$      & Time in \emph{active} state & 0.004\\\hline
+        $t_r$      & Time in \emph{recovery} state & 0.06\\\hline
+        $\gamma$   & Emission rate & 6000\\\hline
+        $\gamma_p$ & Emission rate for pacemakers & 15000\\\hline
+        $\tau$     & Chemical detection threshold & 1.5\\\hline
+        $r$        & Random movement magnitude & 0.03\\\hline
+        $d$        & Moving distance & 0.03\\\hline
+        $m$        & Movement threshold & 1\\\hline
+    \end{tabular}
+    \caption{Parameter Descriptions}
+    \label{tab:par}
+\end{table}
+
+\include{simulation/1/tex.tex}
+\include{simulation/2/tex.tex}
+\include{simulation/6/tex.tex}
+\include{simulation/3/tex.tex}
+\include{simulation/4/tex.tex}
+\include{simulation/5/tex.tex}
+\include{simulation/7/tex.tex}
+\include{simulation/8/tex.tex}
+
+\subsection{Summary}
+
+It is quite apparent that the chemical winds its way through batches of higher particle density, not even getting through areas in which the particle density is too low.
+
+Whenever fronts of the chemical collide a separation in the structure(s) forms, in the case of multiple pacemakers this favours pacemakers which \lq{}fired\rq{} first.
+
+If there are sharp turns in the particle distribution the structure might break more easily and form self-powered blobs.
+These self-powered blobs contain particles in offset states, hence they are able to keep up a certain concentration in their surrounding and they activate each other.
+
+\section{Possible Modifications}
+
+\subsection{Random State Durations}
+
+Instead of having fixed times in the active and recovery states one could look at exponentially distributed times with parameters $t_a^{-1}$ and $t_r^{-1}$ turning it in a continuous-time Markov Chain.
+
+\subsection{Competing Particle Types}
+
+Consider two different particle types which communicate through different chemicals which compete against each other.
+So we would have something like
+\begin{align*}
+    \pdv{C_1}{t}
+    &=\alpha\left(\pdv[2]{C_1}{x}+\pdv[2]{C_1}{y}\right)-\beta C_1+\sum_{a\in A_1}\gamma_a\delta_a-\lambda C_1C_2\\
+    \pdv{C_2}{t}
+    &=\alpha\left(\pdv[2]{C_2}{x}+\pdv[2]{C_2}{y}\right)-\beta C_2+\sum_{a\in A_2}\gamma_a\delta_a-\lambda C_1C_2.
+\end{align*}
+where we introduce the annihilation term $-\lambda C_1C_2$ which might model some chemical process between the two chemicals.
+
+\subsection{More Dimensions}
+
+In many scenarios it makes sense to look at this simulation in 2D, think about thin films of liquid in which the particles float in.
+But it might also be of interest to observe this behaviour not in $\R^2$ but in $\R^3$ which requires minimal changes and gives
+\begin{align*}
+    \pdv{C}{t}
+    &=\alpha\left(\pdv[2]{C}{x}+\pdv[2]{C}{y}+\pdv[2]{C}{z}\right)-\beta C+\sum_{a\in A}\gamma_a\delta_a.
+\end{align*}
+
+\subsection{External Influence}
+
+Further one might also consider external chemical sources or drains which could be modelled by a function
+\begin{align*}
+    E:\ 
+    \R^3&\to\R\\
+    (x,\,y,\,t)&\mapsto E(x,\,y,\,t),
+\end{align*}
+and
+\begin{align*}
+    \pdv{C}{t}
+    &=\alpha\left(\pdv[2]{C}{x}+\pdv[2]{C}{y}\right)-\beta C+\sum_{a\in A}\gamma_a\delta_a+E(x,\,y,\,t).
+\end{align*}
+
+\appendix
+
+\printbibliography
+
+\include{appendix.tex}
+
+\end{document}
